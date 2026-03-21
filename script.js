@@ -186,6 +186,7 @@ function drawCard() {
   const next = S.courtOrder.find(i => (S.courtStates[i] || CS.DECK) === CS.DECK);
   if (next === undefined) return;
   S.courtStates[next] = CS.COURT;
+  S.assignments[next] = 'court';
   save();
   updateStats();
   render();
@@ -325,7 +326,6 @@ function buildCard(card) {
     <div class="card__foot">
       <span class="assign-lbl">ASSIGN</span>
       ${buildAssignBtns(idx, assigned, card.type)}
-      ${card.type === 'court' ? buildStateBtns(idx, cState) : ''}
     </div>
   `;
 
@@ -336,11 +336,9 @@ function buildCard(card) {
       S.assignments[idx] = val;
       // Game mode: mirror assignment to courtState
       if (S.gameMode && card.type === 'court') {
-        if (val !== 'none' && val !== 'court') {
-          S.courtStates[idx] = CS.HELD;
-        } else if (val === 'court') {
-          S.courtStates[idx] = CS.COURT;
-        }
+        if (val === 'none')       S.courtStates[idx] = CS.DISCARD;
+        else if (val === 'court') S.courtStates[idx] = CS.COURT;
+        else                      S.courtStates[idx] = CS.HELD;
       }
       save();
       updateStats();
