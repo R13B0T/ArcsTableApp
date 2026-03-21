@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcs — Card Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ══ Header ══════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="brand">
+      <span class="brand__name">ARCS</span>
+      <span class="brand__sub">CARD TRACKER</span>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-wrap__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.2"/>
+        <line x1="10" y1="10" x2="15" y2="15" stroke="currentColor" stroke-width="1.2" stroke-linecap="square"/>
+      </svg>
+      <input
+        id="search"
+        type="search"
+        class="search-wrap__input"
+        placeholder="Search cards…"
+        autocomplete="off"
+        aria-label="Search cards"
+      />
+    </div>
+
+    <div class="header__actions">
+      <label class="game-toggle" title="Enable court deck management">
+        <input type="checkbox" id="game-mode-toggle" />
+        <span class="game-toggle__track"><span class="game-toggle__thumb"></span></span>
+        <span class="game-toggle__label">GAME MODE</span>
+      </label>
+      <button id="btn-reset" class="btn btn--outline">NEW GAME</button>
+    </div>
+  </header>
+
+  <!-- ══ Filter bar ═══════════════════════════════════════════ -->
+  <div class="filter-bar">
+    <nav class="type-tabs" role="tablist" aria-label="Card type">
+      <button class="type-tab is-active" data-type="court"  role="tab" aria-selected="true" >COURT</button>
+      <button class="type-tab"           data-type="leader" role="tab" aria-selected="false">LEADER</button>
+      <button class="type-tab"           data-type="lore"   role="tab" aria-selected="false">LORE</button>
+    </nav>
+
+    <span class="filter-bar__sep" aria-hidden="true"></span>
+
+    <div class="player-filters" role="group" aria-label="Filter by player">
+      <button class="p-filter is-active" data-player="all"  >ALL</button>
+      <button class="p-filter"           data-player="court">COURT</button>
+      <button class="p-filter"           data-player="draft">DRAFT</button>
+      <button class="p-filter p-filter--red"   data-player="red"  >RED</button>
+      <button class="p-filter p-filter--blue"  data-player="blue" >BLUE</button>
+      <button class="p-filter p-filter--gold"  data-player="gold" >GOLD</button>
+      <button class="p-filter p-filter--white" data-player="white">WHITE</button>
+    </div>
+  </div>
+
+  <!-- ══ Game controls (visible only in game mode) ════════════ -->
+  <div class="game-bar" id="game-bar" hidden>
+    <div class="game-bar__actions">
+      <button id="btn-draw"       class="btn btn--amber">DRAW CARD</button>
+      <button id="btn-reset-deck" class="btn btn--outline">RESET DECK</button>
+    </div>
+    <div class="game-bar__stats">
+      <div class="deck-stat">
+        <span class="deck-stat__num" id="stat-deck">—</span>
+        <span class="deck-stat__lbl">DECK</span>
+      </div>
+      <div class="deck-stat">
+        <span class="deck-stat__num" id="stat-court">—</span>
+        <span class="deck-stat__lbl">COURT</span>
+      </div>
+      <div class="deck-stat">
+        <span class="deck-stat__num" id="stat-discard">—</span>
+        <span class="deck-stat__lbl">DISCARD</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Cards ════════════════════════════════════════════════ -->
+  <main id="cards-grid" class="cards-grid" aria-live="polite" aria-label="Cards"></main>
+
+  <div id="empty-state" class="empty-state" hidden>
+    <span class="empty-state__glyph" aria-hidden="true">◈</span>
+    <p>No cards match your filters.</p>
+  </div>
+
+</div><!-- /.app -->
+
+<script src="script.js"></script>
+</body>
+</html>
