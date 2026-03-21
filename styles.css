@@ -362,9 +362,10 @@ body {
    ════════════════════════════════════════════════════════════ */
 .game-bar {
   display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 10px 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 24px;
   background: var(--deep);
   border-bottom: 1px solid var(--amber-lo);
   flex-shrink: 0;
@@ -374,30 +375,30 @@ body {
 
 .game-bar__stats {
   display: flex;
-  gap: 24px;
-  margin-left: 8px;
+  gap: 20px;
 }
 
 .deck-stat {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .deck-stat__num {
   font-family: var(--f-display);
   font-weight: 300;
-  font-size: 22px;
+  font-size: 18px;
   color: var(--tx-hi);
   line-height: 1;
+  min-width: 1.5ch;
+  text-align: right;
 }
 
 .deck-stat__lbl {
   font-family: var(--f-display);
   font-weight: 100;
   font-size: 8px;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.28em;
   color: var(--tx-lo);
 }
 
@@ -613,7 +614,7 @@ body {
   .brand__name { font-size: 24px; }
   .brand__sub  { display: none; }
   .search-wrap { max-width: none; }
-  .game-bar    { padding: 8px 14px; gap: 12px; }
+  .game-bar    { padding: 10px 14px; gap: 8px; }
   .cards-grid  { grid-template-columns: 1fr; }
   .game-toggle__label { display: none; }
 
