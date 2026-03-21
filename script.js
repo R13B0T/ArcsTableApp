@@ -47,6 +47,7 @@ let S = {
   courtStates:  {},   // index → CS.*
   courtOrder:   [],   // shuffled indices of court cards
   gameMode:     false,
+  playerCount:  4,    // 2 / 3 / 4
   activeType:   'court',
   activePlayer: 'all',
   search:       '',
@@ -60,6 +61,7 @@ function save() {
     courtStates: S.courtStates,
     courtOrder:  S.courtOrder,
     gameMode:    S.gameMode,
+    playerCount: S.playerCount,
   }));
 }
 
@@ -72,6 +74,7 @@ function load() {
     S.courtStates = d.courtStates || {};
     S.courtOrder  = d.courtOrder  || [];
     S.gameMode    = d.gameMode    || false;
+    S.playerCount = d.playerCount || 4;
   } catch (_) { /* ignore corrupt data */ }
 }
 
@@ -100,6 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   bindEvents();
   applyGameMode();
+  syncPlayerCount();
   render();
 });
 
@@ -161,6 +165,24 @@ function bindEvents() {
 
   // Reset deck
   document.getElementById('btn-reset-deck').addEventListener('click', resetDeck);
+
+  // Player count selector
+  document.querySelectorAll('.pc-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pc-btn').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      S.playerCount = parseInt(btn.dataset.pc, 10);
+      save();
+    });
+  });
+
+  // Draft leaders
+  document.getElementById('btn-draft-leaders').addEventListener('click', () => {
+    const each  = 2;
+    const total = S.playerCount * each;
+    if (!confirm(`Deal ${total} leaders for a ${S.playerCount}-player draft (${each} each)?\n\nThis will reset any existing leader assignments.`)) return;
+    draftLeaders();
+  });
 }
 
 // ── Game mode ────────────────────────────────────────────────
@@ -285,6 +307,52 @@ function applyGameMode() {
     app.classList.remove('game-active');
     gameBar.hidden = true;
   }
+}
+
+// ── Leader draft ─────────────────────────────────────────────
+
+function draftLeaders() {
+  // Collect all leader indices and shuffle them
+  const indices = allCards
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.type === 'leader')
+    .map(({ i }) => i);
+
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+
+  // Reset all leader assignments
+  indices.forEach(i => { S.assignments[i] = 'none'; });
+
+  // Mark the first (playerCount × 2) as 'draft' — the face-up pool to pick from
+  const draftCount = S.playerCount * 2;
+  indices.slice(0, draftCount).forEach(i => { S.assignments[i] = 'draft'; });
+
+  save();
+
+  // Switch view to Leader tab → Draft filter so host sees the pool immediately
+  S.activeType   = 'leader';
+  S.activePlayer = 'draft';
+  document.querySelectorAll('.type-tab').forEach(b => {
+    b.classList.remove('is-active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  const leaderTab = document.querySelector('.type-tab[data-type="leader"]');
+  leaderTab.classList.add('is-active');
+  leaderTab.setAttribute('aria-selected', 'true');
+  document.querySelectorAll('.p-filter').forEach(b => b.classList.remove('is-active'));
+  document.querySelector('.p-filter[data-player="draft"]').classList.add('is-active');
+
+  render();
+}
+
+// Also sync the player-count buttons to the saved state on load
+function syncPlayerCount() {
+  document.querySelectorAll('.pc-btn').forEach(btn => {
+    btn.classList.toggle('is-active', parseInt(btn.dataset.pc, 10) === S.playerCount);
+  });
 }
 
 // ── Render ───────────────────────────────────────────────────

@@ -373,6 +373,45 @@ body {
 
 .game-bar__actions { display: flex; gap: 8px; }
 
+.game-bar__draft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.game-bar__lbl {
+  font-family: var(--f-display);
+  font-weight: 100;
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  color: var(--tx-lo);
+  margin-right: 6px;
+}
+
+.pc-wrap { display: flex; align-items: center; }
+
+.pc-btns { display: flex; gap: 3px; }
+
+.pc-btn {
+  font-family: var(--f-display);
+  font-weight: 300;
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  background: var(--raised);
+  border: 1px solid var(--b1);
+  color: var(--tx-lo);
+  cursor: pointer;
+  border-radius: var(--r);
+  transition: all var(--ease);
+}
+.pc-btn:hover    { border-color: var(--b2); color: var(--tx-mid); }
+.pc-btn.is-active {
+  background: rgba(200,160,56,0.12);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
 .game-bar__stats {
   display: flex;
   gap: 20px;
@@ -535,6 +574,20 @@ body {
 .a-btn[data-a="none"]  { background: var(--raised); border-color: var(--b1); }
 .a-btn[data-a="none"]:hover { border-color: var(--b2); }
 .a-btn[data-a="none"].on    { border-color: var(--b3); background: var(--hover); }
+
+/* In game mode, court-card "none" = discard/trigger — show a visible × */
+.game-active .card[data-type="court"] .a-btn[data-a="none"] {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; line-height: 1; color: var(--tx-lo);
+  border-color: rgba(200,64,64,0.20);
+}
+.game-active .card[data-type="court"] .a-btn[data-a="none"]::after { content: '×'; pointer-events: none; }
+.game-active .card[data-type="court"] .a-btn[data-a="none"]:hover {
+  background: rgba(200,64,64,0.12); border-color: rgba(200,64,64,0.50); color: #c84040;
+}
+.game-active .card[data-type="court"] .a-btn[data-a="none"].on {
+  background: rgba(200,64,64,0.20); border-color: #c84040; color: #c84040;
+}
 
 /* Court = cool teal, clearly distinct from warm amber gold */
 .a-btn[data-a="court"] { background: rgba(20,170,148,0.10); border-color: rgba(20,170,148,0.30); }
