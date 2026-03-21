@@ -181,6 +181,16 @@ function shuffleCourtDeck() {
   save();
 }
 
+// True if this court card is a VOX card (triggers & discards — can't be held)
+function isVox(card) {
+  return card.title.includes('(VOX)');
+}
+
+// True if this VOX card specifically shuffles back into the court deck (Song of Freedom)
+function isShuffleBack(card) {
+  return card.title.startsWith('SONG OF FREEDOM');
+}
+
 function drawCard() {
   // Find the next DECK card in shuffled order
   const next = S.courtOrder.find(i => (S.courtStates[i] || CS.DECK) === CS.DECK);
@@ -192,19 +202,44 @@ function drawCard() {
   render();
 }
 
+// Called whenever a COURT card leaves the face-up row (secured or discarded).
+// Per the rules, a replacement is automatically drawn from the deck.
+function autoDrawReplacement() {
+  const next = S.courtOrder.find(i => (S.courtStates[i] || CS.DECK) === CS.DECK);
+  if (next === undefined) return; // deck exhausted — no replacement drawn
+  S.courtStates[next] = CS.COURT;
+  S.assignments[next] = 'court';
+}
+
 function resetDeck() {
-  if (!confirm('Shuffle all non-held court cards back into the deck?')) return;
-  // Collect non-held indices and reshuffle them
-  const all     = courtIndices();
-  const held    = all.filter(i => S.courtStates[i] === CS.HELD);
-  const returns = all.filter(i => S.courtStates[i] !== CS.HELD);
-  // Shuffle returns
+  // Per the rules, only undrawn (DECK) and face-up (COURT) cards are reshuffled.
+  // Discarded cards are permanently removed from the pool.
+  // Exception: use Guild Struggle's effect to recycle guild discards mid-game.
+  const all      = courtIndices();
+  const held     = all.filter(i => S.courtStates[i] === CS.HELD);
+  const discard  = all.filter(i => S.courtStates[i] === CS.DISCARD);
+  const returns  = all.filter(i => {
+    const st = S.courtStates[i] || CS.DECK;
+    return st === CS.DECK || st === CS.COURT;
+  });
+
+  const discardCount = discard.length;
+  const msg = discardCount > 0
+    ? `Reshuffle the remaining ${returns.length} court cards (deck + face-up) into the deck?\n\n${discardCount} discarded card${discardCount !== 1 ? 's' : ''} stay out of the pool.`
+    : `Reshuffle all ${returns.length} court cards into the deck?`;
+  if (!confirm(msg)) return;
+
+  // Shuffle only the returnable cards
   for (let i = returns.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [returns[i], returns[j]] = [returns[j], returns[i]];
   }
-  returns.forEach(i => { S.courtStates[i] = CS.DECK; });
-  S.courtOrder = [...returns, ...held];
+  returns.forEach(i => {
+    S.courtStates[i] = CS.DECK;
+    delete S.assignments[i];
+  });
+  // Order: reshuffled deck first, then held (at end, out of draw path), then discards
+  S.courtOrder = [...returns, ...held, ...discard];
   save();
   updateStats();
   render();
@@ -229,9 +264,11 @@ function updateStats() {
   const all     = courtIndices();
   const deck    = all.filter(i => (S.courtStates[i] || CS.DECK) === CS.DECK).length;
   const court   = all.filter(i => S.courtStates[i] === CS.COURT).length;
+  const held    = all.filter(i => S.courtStates[i] === CS.HELD).length;
   const discard = all.filter(i => S.courtStates[i] === CS.DISCARD).length;
   document.getElementById('stat-deck').textContent    = deck;
   document.getElementById('stat-court').textContent   = court;
+  document.getElementById('stat-held').textContent    = held;
   document.getElementById('stat-discard').textContent = discard;
 }
 
@@ -325,7 +362,7 @@ function buildCard(card) {
     </div>
     <div class="card__foot">
       <span class="assign-lbl">ASSIGN</span>
-      ${buildAssignBtns(idx, assigned, card.type)}
+      ${buildAssignBtns(idx, assigned, card)}
     </div>
   `;
 
@@ -334,12 +371,49 @@ function buildCard(card) {
     btn.addEventListener('click', () => {
       const val = btn.dataset.a;
       S.assignments[idx] = val;
-      // Game mode: mirror assignment to courtState
+
       if (S.gameMode && card.type === 'court') {
-        if (val === 'none')       S.courtStates[idx] = CS.DISCARD;
-        else if (val === 'court') S.courtStates[idx] = CS.COURT;
-        else                      S.courtStates[idx] = CS.HELD;
+        const prevState = S.courtStates[idx] || CS.DECK;
+
+        if (val === 'court') {
+          // Returning a card to the face-up court row
+          S.courtStates[idx] = CS.COURT;
+        } else if (val === 'none') {
+          // Discarding the card — with one exception:
+          // Song of Freedom says "Shuffle this card into the Court deck."
+          if (isShuffleBack(card)) {
+            S.courtStates[idx] = CS.DECK;
+            delete S.assignments[idx];
+            // Insert at a random position among the remaining deck cards
+            const deckIdxs = S.courtOrder.filter(
+              i => i !== idx && (S.courtStates[i] || CS.DECK) === CS.DECK
+            );
+            const pos = Math.floor(Math.random() * (deckIdxs.length + 1));
+            S.courtOrder = S.courtOrder.filter(i => i !== idx);
+            if (deckIdxs.length === 0) {
+              S.courtOrder.unshift(idx);
+            } else {
+              const insertAfter = pos < deckIdxs.length ? deckIdxs[pos] : null;
+              const at = insertAfter !== null
+                ? S.courtOrder.indexOf(insertAfter)
+                : S.courtOrder.length;
+              S.courtOrder.splice(at, 0, idx);
+            }
+          } else {
+            S.courtStates[idx] = CS.DISCARD;
+            delete S.assignments[idx];
+          }
+        } else {
+          // Assigning to a player — only valid for Guild cards, not VOX
+          S.courtStates[idx] = CS.HELD;
+        }
+
+        // Rule: when a face-up COURT card leaves the row, auto-draw a replacement
+        if (prevState === CS.COURT && S.courtStates[idx] !== CS.COURT) {
+          autoDrawReplacement();
+        }
       }
+
       save();
       updateStats();
       render();
@@ -356,8 +430,14 @@ function buildCard(card) {
   return el;
 }
 
-function buildAssignBtns(idx, assigned, type) {
-  return ASSIGN_OPTIONS[type].map(opt =>
+function buildAssignBtns(idx, assigned, card) {
+  // VOX court cards trigger-and-discard — players never hold them.
+  // Only show COURT (return to row) and NONE (discard / trigger effect).
+  let opts = ASSIGN_OPTIONS[card.type];
+  if (S.gameMode && card.type === 'court' && isVox(card)) {
+    opts = ['court', 'none'];
+  }
+  return opts.map(opt =>
     `<button
        class="a-btn${assigned === opt ? ' on' : ''}"
        data-a="${opt}"
