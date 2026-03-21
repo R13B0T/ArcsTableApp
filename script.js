@@ -234,24 +234,19 @@ function autoDrawReplacement() {
 }
 
 function resetDeck() {
-  // Per the rules, only undrawn (DECK) and face-up (COURT) cards are reshuffled.
-  // Discarded cards are permanently removed from the pool.
-  // Exception: use Guild Struggle's effect to recycle guild discards mid-game.
-  const all      = courtIndices();
-  const held     = all.filter(i => S.courtStates[i] === CS.HELD);
-  const discard  = all.filter(i => S.courtStates[i] === CS.DISCARD);
-  const returns  = all.filter(i => {
-    const st = S.courtStates[i] || CS.DECK;
-    return st === CS.DECK || st === CS.COURT;
-  });
+  // End-of-chapter reshuffle: the discard pile goes back into the court deck.
+  // Held guild cards (with players) stay held.
+  // Song of Freedom is already handled specially when it's discarded (shuffled in mid-game).
+  const all     = courtIndices();
+  const held    = all.filter(i => S.courtStates[i] === CS.HELD);
+  const returns = all.filter(i => S.courtStates[i] !== CS.HELD); // deck + court + discard all go back
 
-  const discardCount = discard.length;
-  const msg = discardCount > 0
-    ? `Reshuffle the remaining ${returns.length} court cards (deck + face-up) into the deck?\n\n${discardCount} discarded card${discardCount !== 1 ? 's' : ''} stay out of the pool.`
-    : `Reshuffle all ${returns.length} court cards into the deck?`;
+  const msg = `Reshuffle court deck for a new chapter?\n\nThe discard pile (${
+    all.filter(i => S.courtStates[i] === CS.DISCARD).length
+  } cards) will be shuffled back in.\nHeld cards (${held.length}) stay with their players.`;
   if (!confirm(msg)) return;
 
-  // Shuffle only the returnable cards
+  // Fisher-Yates shuffle of all returnable cards
   for (let i = returns.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [returns[i], returns[j]] = [returns[j], returns[i]];
@@ -260,8 +255,7 @@ function resetDeck() {
     S.courtStates[i] = CS.DECK;
     delete S.assignments[i];
   });
-  // Order: reshuffled deck first, then held (at end, out of draw path), then discards
-  S.courtOrder = [...returns, ...held, ...discard];
+  S.courtOrder = [...returns, ...held];
   save();
   updateStats();
   render();
@@ -505,15 +499,22 @@ function buildAssignBtns(idx, assigned, card) {
   if (S.gameMode && card.type === 'court' && isVox(card)) {
     opts = ['court', 'none'];
   }
-  return opts.map(opt =>
-    `<button
+
+  return opts.map(opt => {
+    // In game mode, the 'none' button on a court card = send to discard pile.
+    // Render the × character directly inside the button (not via CSS ::after)
+    // so it shows reliably across all browsers.
+    const isDiscard = S.gameMode && card.type === 'court' && opt === 'none';
+    const label     = isDiscard ? 'Discard to pile' : ASSIGN_TITLES[opt];
+    const inner     = isDiscard ? '×' : '';
+    return `<button
        class="a-btn${assigned === opt ? ' on' : ''}"
        data-a="${opt}"
-       title="${ASSIGN_TITLES[opt]}"
-       aria-label="${ASSIGN_TITLES[opt]}"
+       title="${label}"
+       aria-label="${label}"
        aria-pressed="${assigned === opt}"
-     ></button>`
-  ).join('');
+     >${inner}</button>`;
+  }).join('');
 }
 
 function buildStateBtns(idx, cState) {
