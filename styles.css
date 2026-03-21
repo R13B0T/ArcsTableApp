@@ -536,9 +536,10 @@ body {
 .a-btn[data-a="none"]:hover { border-color: var(--b2); }
 .a-btn[data-a="none"].on    { border-color: var(--b3); background: var(--hover); }
 
-.a-btn[data-a="court"] { background: rgba(140,165,190,0.10); border-color: rgba(140,165,190,0.30); }
-.a-btn[data-a="court"]:hover { background: rgba(140,165,190,0.20); border-color: rgba(140,165,190,0.60); }
-.a-btn[data-a="court"].on    { background: rgba(140,165,190,0.28); border-color: #8ca5be; box-shadow: 0 0 0 1px rgba(140,165,190,0.25); }
+/* Court = cool teal, clearly distinct from warm amber gold */
+.a-btn[data-a="court"] { background: rgba(20,170,148,0.10); border-color: rgba(20,170,148,0.30); }
+.a-btn[data-a="court"]:hover { background: rgba(20,170,148,0.22); border-color: rgba(20,170,148,0.70); }
+.a-btn[data-a="court"].on    { background: rgba(20,170,148,0.28); border-color: #14aa94; box-shadow: 0 0 0 1px rgba(20,170,148,0.30); }
 
 .a-btn[data-a="draft"] { background: rgba(122,144,168,0.1); border-color: rgba(122,144,168,0.25); }
 .a-btn[data-a="draft"]:hover { background: rgba(122,144,168,0.2); border-color: var(--tx-mid); }
@@ -640,13 +641,26 @@ body {
   .filter-bar__sep { display: none; }
   .player-filters {
     display: flex;
-    gap: 4px;
-    padding: 7px 14px;
+    gap: 3px;
+    padding: 6px 10px;
     overflow-x: auto;
     scrollbar-width: none;
     flex-wrap: nowrap;
+    justify-content: space-between;
   }
   .player-filters::-webkit-scrollbar { display: none; }
-  .p-filter { flex-shrink: 0; }
+  .p-filter {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 5px 4px;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+  /* Colour-coded player pills on mobile */
+  .p-filter--red   { border-left: 2px solid var(--red); }
+  .p-filter--blue  { border-left: 2px solid var(--blue); }
+  .p-filter--gold  { border-left: 2px solid var(--gold); }
+  .p-filter--white { border-left: 2px solid var(--white); }
 }
 

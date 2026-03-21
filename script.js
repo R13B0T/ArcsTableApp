@@ -11,14 +11,14 @@ const STORAGE_KEY = 'arcs-v2';
 // Which assign options appear per card type
 const ASSIGN_OPTIONS = {
   court:  ['none', 'court', 'red', 'blue', 'gold', 'white'],
-  leader: ['none', 'red', 'blue', 'gold', 'white'],
+  leader: ['none', 'draft', 'red', 'blue', 'gold', 'white'],
   lore:   ['none', 'draft', 'red', 'blue', 'gold', 'white'],
 };
 
 const ASSIGN_TITLES = {
   none:  'Unassigned',
   court: 'In the Court',
-  draft: 'Draft pile',
+  draft: 'In draft pool',
   red:   'Red player',
   blue:  'Blue player',
   gold:  'Gold player',
