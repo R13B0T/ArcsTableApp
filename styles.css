@@ -449,7 +449,7 @@ body {
 .card[data-assigned="blue"]  { --accent: var(--blue); }
 .card[data-assigned="gold"]  { --accent: var(--gold); }
 .card[data-assigned="white"] { --accent: var(--white); }
-.card[data-assigned="court"] { --accent: var(--court-c); }
+.card[data-assigned="court"] { --accent: #8ca5be; }
 .card[data-assigned="draft"] { --accent: var(--tx-mid); }
 
 /* Game mode court states */
@@ -535,9 +535,9 @@ body {
 .a-btn[data-a="none"]:hover { border-color: var(--b2); }
 .a-btn[data-a="none"].on    { border-color: var(--b3); background: var(--hover); }
 
-.a-btn[data-a="court"] { background: rgba(200,160,56,0.12); border-color: var(--amber-lo); }
-.a-btn[data-a="court"]:hover { background: rgba(200,160,56,0.22); border-color: var(--amber); }
-.a-btn[data-a="court"].on    { background: rgba(200,160,56,0.28); border-color: var(--amber); }
+.a-btn[data-a="court"] { background: rgba(140,165,190,0.10); border-color: rgba(140,165,190,0.30); }
+.a-btn[data-a="court"]:hover { background: rgba(140,165,190,0.20); border-color: rgba(140,165,190,0.60); }
+.a-btn[data-a="court"].on    { background: rgba(140,165,190,0.28); border-color: #8ca5be; box-shadow: 0 0 0 1px rgba(140,165,190,0.25); }
 
 .a-btn[data-a="draft"] { background: rgba(122,144,168,0.1); border-color: rgba(122,144,168,0.25); }
 .a-btn[data-a="draft"]:hover { background: rgba(122,144,168,0.2); border-color: var(--tx-mid); }
@@ -613,14 +613,39 @@ body {
   .brand__name { font-size: 24px; }
   .brand__sub  { display: none; }
   .search-wrap { max-width: none; }
-  .filter-bar  { padding: 0 14px; }
-  .type-tab    { padding: 0 14px; }
   .game-bar    { padding: 8px 14px; gap: 12px; }
   .cards-grid  { grid-template-columns: 1fr; }
   .game-toggle__label { display: none; }
+
+  /* Two-row filter bar on mobile */
+  .filter-bar {
+    padding: 0;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .type-tabs {
+    display: flex;
+    height: 40px;
+    border-bottom: 1px solid var(--b1);
+  }
+  .type-tab {
+    flex: 1;
+    padding: 0;
+    text-align: center;
+    font-size: 9px;
+  }
+  .filter-bar__sep { display: none; }
+  .player-filters {
+    display: flex;
+    gap: 4px;
+    padding: 7px 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .player-filters::-webkit-scrollbar { display: none; }
+  .p-filter { flex-shrink: 0; }
 }
 
-@media (max-width: 400px) {
-  .p-filter[data-player="court"],
-  .p-filter[data-player="draft"] { display: none; }
-}
