@@ -81,7 +81,7 @@
     {
       "type": "court",
       "title": "COURT ENFORCERS (Guild)",
-      "description": "Abduct (Battle): Capture all Rival agents from a card in the Court that has fewer Rival agents than your Weapon icons from resources and cards. Prelude: You may discard this to place 3 ships in a system you control.",
+      "description": "Abduct (Battle): Capture all Rival agents from a card in the Court that has fewer Rival agents than your total Weapon icons from resources and cards. Prelude: You may discard this to place 3 ships in a system you control.",
       "player": "none"
     },
     {
@@ -129,13 +129,13 @@
     {
       "type": "court",
       "title": "SWORN GUARDIANS (Guild)",
-      "description": "Rivals cannot steal your resources and other Guild cards. (In battle they can steal this first then spend it.) If this card is stolen, bury it. (Place it on the bottom of the Court deck.)",
+      "description": "Rivals cannot steal your resources and other Guild cards. (In battle they can steal this first and then spend 1 key.) If this card is stolen, bury it. (Place it on the bottom of the Court deck.)",
       "player": "none"
     },
     {
       "type": "court",
       "title": "ELDER BROKER (Guild)",
-      "description": "Trade (Tax): Choose a Rival city you control. Gain 1 resource with that Rival. Take a resource of that city type from them, and give them a resource they don't have. Prelude: You may discard this to gain 1 Material, 1 Fuel, and 1 Weapon.",
+      "description": "Trade (Tax): Choose a Rival city you control. Swap 1 resource with that Rival—take a resource of that city type from them, and give them a resource they don't have. Prelude: You may discard this to gain 1 Material, 1 Fuel, and 1 Weapon.",
       "player": "none"
     },
     {
@@ -159,7 +159,7 @@
     {
       "type": "court",
       "title": "POPULIST DEMANDS (VOX)",
-      "description": "When Secured: You may declare any ambition. (An ambition marker must be Available.) Discard this card.",
+      "description": "When Secured: You may declare any ambition. (An ambition marker must be Available.) Don't place the zero marker. Discard this card.",
       "player": "none"
     },
     {
@@ -171,7 +171,7 @@
     {
       "type": "court",
       "title": "SONG OF FREEDOM (VOX)",
-      "description": "When Secured: You may return any one city on your player board. If you do, you may seize the initiative. Shuffle this card into the Court deck. You can't seize the initiative if you have it or if it's already seized this round!",
+      "description": "When Secured: You may return any one city you control to its player board. If you do, you may seize the initiative. Shuffle this card into the Court deck. You can't seize the initiative if you have it or if it's already seized this round!",
       "player": "none"
     },
     {
@@ -207,7 +207,7 @@
     {
       "type": "leader",
       "title": "UPSTART (Leader)",
-      "description": "Ambitious. When you declare an ambition, you may gain any resource. (You must declare the ambition before taking any actions, including Prelude actions from resources.) Callow. You can only tax Loyal cities if you control them.",
+      "description": "Ambitious. When you declare an ambition, you may gain any resource. (You must declare the ambition before taking any actions, including Prelude actions from resources.) Callow. You cannot tax cities that you do not control.",
       "player": "none"
     },
     {
@@ -219,13 +219,13 @@
     {
       "type": "leader",
       "title": "WARRIOR (Leader)",
-      "description": "Tactical. When you Copy or Pivot to battle, you may move before or after you battle. (You may do this even if you spent a Weapon to let you battle.) Violent. When you're scoring Empath, gain no Power for second place, and gain Power for second place if you get first place.",
+      "description": "Tactical. When you Copy or Pivot to battle, you may move before or after you battle. (You may do this even if you spent a Weapon to let you battle.) Violent. When you're scoring Empath, gain no Power for second place, and gain Power for second place if you get first place. (Don't get bonus city Power.)",
       "player": "none"
     },
     {
       "type": "leader",
       "title": "FEASTBRINGER (Leader)",
-      "description": "Charismatic. When you Copy or Pivot to secure a card, you may influence before or after you secure. Generous. To declare an ambition, you must give 1 Guild card to your Rival with the least Power.",
+      "description": "Charismatic. When you Copy or Pivot in order to secure a card, you may influence before or after you secure. Generous. To declare an ambition, you must give 1 Guild card to your Rival with the least Power.",
       "player": "none"
     },
     {
@@ -237,13 +237,13 @@
     {
       "type": "leader",
       "title": "ARCHIVIST (Leader)",
-      "description": "Learned. After setup, gain 2 extra lore cards — draw 5 lore, keep 2, and scrap the other 3 (returning them to the box). Academic. When you're scoring Tycoon, gain no Power for second place, and gain Power for second place if you get first place. (Don't get bonus city Power.)",
+      "description": "Learned. After setup, gain 2 extra lore cards—draw 5 lore, keep 2, and scrap the other 3 (returning them to the box). Academic. When you're scoring Tycoon, gain no Power for second place, and gain Power for second place if you get first place. (Don't get bonus city Power.)",
       "player": "none"
     },
     {
       "type": "leader",
       "title": "OVERSEER (Leader)",
-      "description": "Ruthless. Once per turn, when you tax any city or build a ship at a starport, you may hit the building to take that action again with it. (If you destroy a Loyal city, you Provoke Outrage and Ransack the Court.) Hated. In setup, scrap 2 Loyal ships and 3 Loyal agents. (Return them to the box.)",
+      "description": "Ruthless. Once per turn, when you tax any city or build a ship at a starport, you may hit the building to take that action again with it. If you destroy a Loyal city, you Provoke Outrage. (If you destroy a Rival city, Provoke Outrage and Ransack the Court.) Hated. In setup, scrap 2 Loyal ships and 3 Loyal agents. (Return them to the box.)",
       "player": "none"
     },
     {
@@ -273,7 +273,7 @@
     {
       "type": "leader",
       "title": "AGITATOR (Leader)",
-      "description": "Firebrand. When you Copy or Pivot in order to tax, you gain 1 Weapon along with the taxed resource. Irregular. If a Rival attacks you in battle and rolls intercept dice, they do not take hits from fresh defending ships. Instead, they take 1 hit per Weapon icon you have from cards and resources, then you discard 1 Weapon resource you have.",
+      "description": "Firebrand. When you Copy or Pivot in order to tax, you gain 1 Weapon along with the taxed resource. Irregular. If a Rival attacks you in battle and is intercepted, they do not take hits from fresh defending ships. Instead, they take 1 hit per Weapon icon you have from cards and resources, then you discard 1 Weapon resource you have.",
       "player": "none"
     },
     {
@@ -291,19 +291,19 @@
     {
       "type": "lore",
       "title": "GALACTIC RIFLES (Lore)",
-      "description": "Fire Rifles (Battle): Like in a battle, choose a system and collect skirmish dice for fresh Loyal ships there. Choose a defender in an adjacent system, roll the collected dice, and deal 1 hit to the defender per Hit rolled. (Hit ships before buildings.)",
+      "description": "Fire Rifles (Battle): Like in a battle, choose a system and collect skirmish dice for fresh Loyal ships there, choose a defender in an adjacent system, roll the collected dice, and deal 1 hit to the defender per hit rolled. (Hit ships before buildings.)",
       "player": "none"
     },
     {
       "type": "lore",
       "title": "SPRINTER DRIVES (Lore)",
-      "description": "When you move fresh Loyal ships, you may move any of them one more time. (Damaged ships can move with them once, but won't move one more time.)",
+      "description": "When you move fresh Loyal ships, you may move any of them one more time. (Damaged ships can move with them once, but won't move one more time. Resolve this after all Catapult moves.)",
       "player": "none"
     },
     {
       "type": "lore",
       "title": "MIRROR PLATING (Lore)",
-      "description": "When you defend in battle, add 1 intercept die to the attacker's roll if they rolled any number of assault dice.",
+      "description": "When you defend in battle, add 1 intercept result to the attacker’s roll if they rolled any number of assault dice.",
       "player": "none"
     },
     {
@@ -315,7 +315,7 @@
     {
       "type": "lore",
       "title": "SIGNAL BREAKER (Lore)",
-      "description": "When attacking in battle, if all attacking ships are fresh at the start of the battle, you ignore 1 intercept die you roll.",
+      "description": "When attacking in battle, if all attacking ships are fresh at the start of the battle, you ignore 1 intercept result you roll.",
       "player": "none"
     },
     {
@@ -339,13 +339,13 @@
     {
       "type": "lore",
       "title": "LIVING STRUCTURES (Lore)",
-      "description": "Nurture (Build): Tax a Loyal city. Prune (Repair): Replace a Loyal starport with a Loyal city or vice versa.",
+      "description": "Nurture (Build): Tax a Loyal city. Prune (Repair): Replace a Loyal starport in a slot with a Loyal city or vice versa.",
       "player": "none"
     },
     {
       "type": "lore",
       "title": "GATE STATIONS (Lore)",
-      "description": "You may build cities on gates, max 1 per gate. A gate city's type matches all cities in its cluster. (Players may tax it for 1 resource of any of those cities. If it is destroyed, Provoke Outrage of all those city types.) Discard this card.",
+      "description": "You may build cities on gates, max 1 per gate. A gate city's type matches all cities in its cluster. (Players may tax it for 1 resource of any of those cities. If it is destroyed, Provoke Outrage of all those city types.)",
       "player": "none"
     },
     {
@@ -357,7 +357,7 @@
     {
       "type": "lore",
       "title": "ANCIENT HOLDINGS (Lore)",
-      "description": "This card has one resource slot with a raid cost of 4 keys. You can hold one resource here. It adds to your ambitions. You can spend it.",
+      "description": "This card has one resource slot with a raid cost of 4 keys. (You can hold one resource here. It adds to your ambitions. You can spend it.)",
       "player": "none"
     },
     {
@@ -375,7 +375,7 @@
     {
       "type": "lore",
       "title": "FORCE BEAMS (Lore)",
-      "description": "Guide (Move): Move any number of ships (even if not Loyal) from a system with a fresh Loyal starport to an adjacent system, or vice versa, ignoring move modifiers.",
+      "description": "Guide (Move): Move any number of any ships (even if not Loyal) from a system with a fresh Loyal starport to an adjacent system, or vice versa, ignoring move modifiers in play areas.",
       "player": "none"
     },
     {
@@ -399,7 +399,7 @@
     {
       "type": "lore",
       "title": "EMPATH'S BOND (Lore)",
-      "description": "While Empath is declared, you may tax any cities, and build ships and Catapult move with any starports, like they are Loyal. (Don't take Captives. Build ships damaged in blockaded systems.) Prelude: You may discard this to clear your Psionic Outrage.",
+      "description": "While Empath is declared, you may tax any cities, and build ships and Catapult move with any starports, like they are Loyal. (Don't take Captives. Build ships damaged in Rival-controlled systems.)",
       "player": "none"
     },
     {
@@ -417,13 +417,13 @@
     {
       "type": "lore",
       "title": "WARLORD'S CRUELTY (Lore)",
-      "description": "While Warlord is declared, you may tax any cities that you already taxed this turn. Prelude: You may discard this to clear your Weapon Outrage.",
+      "description": "While Warlord is declared, you may tax cities that you already taxed this turn. Prelude: You may discard this to clear your Weapon Outrage.",
       "player": "none"
     },
     {
       "type": "lore",
       "title": "WARLORD'S TERROR (Lore)",
-      "description": "While Warlord is declared, you may spend Captives in your Prelude, returning them, to influence once for each.",
+      "description": "While Warlord is declared, you may spend Trophies in your Prelude, returning them, to influence once for each.",
       "player": "none"
     },
     {
@@ -441,7 +441,7 @@
     {
       "type": "lore",
       "title": "TYCOON'S AMBITION (Lore)",
-      "description": "Prelude: While Tycoon is declared, before any other actions, you may discard all your Material and Fuel to declare exactly 1 undeclared ambition. Do not place the zero marker. (You may do this just after declaring Tycoon.)",
+      "description": "Prelude: While Tycoon is declared, before taking any other actions, you may discard all of your Material and Fuel to declare exactly 1 undeclared ambition. Do not place the zero marker. (You may do this just after declaring Tycoon.)",
       "player": "none"
     },
     {
