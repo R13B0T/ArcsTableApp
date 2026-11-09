@@ -33,7 +33,7 @@
     </div>
 
     <div class="header__actions">
-      <label class="game-toggle" title="Enable court deck management">
+      <label class="game-toggle" title="Enable Court and draft management">
         <input type="checkbox" id="game-mode-toggle" />
         <span class="game-toggle__track"><span class="game-toggle__thumb"></span></span>
         <span class="game-toggle__label">GAME MODE</span>
@@ -66,8 +66,8 @@
   <!-- ══ Game controls (visible only in game mode) ════════════ -->
   <div class="game-bar" id="game-bar" hidden>
     <div class="game-bar__actions">
-      <button id="btn-draw"       class="btn btn--amber">DRAW CARD</button>
-      <button id="btn-reset-deck" class="btn btn--outline">RESET DECK</button>
+      <button id="btn-setup-court" class="btn btn--amber">SET UP COURT</button>
+      <button id="btn-noble" class="btn btn--outline" hidden>NOBLE: SECURE TOP CARD</button>
     </div>
     <div class="game-bar__draft">
       <div class="pc-wrap">
@@ -78,7 +78,8 @@
           <button class="pc-btn is-active" data-pc="4">4</button>
         </div>
       </div>
-      <button id="btn-draft-leaders" class="btn btn--outline">DRAFT LEADERS</button>
+      <label class="draft-pack"><input id="include-pack" type="checkbox" /> Include Leaders &amp; Lore Pack</label>
+      <button id="btn-draft" class="btn btn--outline">DRAFT LEADERS &amp; LORE</button>
     </div>
     <div class="game-bar__stats">
       <div class="deck-stat">
@@ -99,6 +100,8 @@
       </div>
     </div>
   </div>
+
+  <p id="game-note" class="game-note" role="status" hidden></p>
 
   <!-- ══ Cards ════════════════════════════════════════════════ -->
   <main id="cards-grid" class="cards-grid" aria-live="polite" aria-label="Cards"></main>

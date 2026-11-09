@@ -7,6 +7,14 @@
 // ── Constants ───────────────────────────────────────────────
 
 const STORAGE_KEY = 'arcs-v2';
+const PLAYERS = ['red', 'blue', 'gold', 'white'];
+const BASE_DRAFT_COUNTS = { leader: 8, lore: 14 };
+const CARD = {
+  SONG: 'SONG OF FREEDOM (VOX)',
+  STRUGGLE: 'GUILD STRUGGLE (VOX)',
+  GUARDIANS: 'SWORN GUARDIANS (Guild)',
+  NOBLE: 'NOBLE (Leader)',
+};
 
 // Which assign options appear per card type
 const ASSIGN_OPTIONS = {
@@ -36,7 +44,7 @@ const KEYWORDS = [
 const KEYWORD_RE = new RegExp(`(${KEYWORDS.join('|')})`, 'g');
 
 // Court card states (game mode)
-const CS = { DECK: 'deck', COURT: 'court', HELD: 'held', DISCARD: 'discard' };
+const CS = { DECK: 'deck', COURT: 'court', HELD: 'held', DISCARD: 'discard', RESOLVING: 'resolving' };
 
 // ── State ────────────────────────────────────────────────────
 
@@ -46,6 +54,11 @@ let S = {
   assignments:  {},   // index → player string
   courtStates:  {},   // index → CS.*
   courtOrder:   [],   // shuffled indices of court cards
+  courtRow:     null, // null until setup, then card indices or empty slots
+  pendingVox:   null,
+  drafting:     false,
+  draftOrder:   [],
+  includePack:  false,
   gameMode:     false,
   playerCount:  4,    // 2 / 3 / 4
   activeType:   'court',
@@ -60,6 +73,11 @@ function save() {
     assignments: S.assignments,
     courtStates: S.courtStates,
     courtOrder:  S.courtOrder,
+    courtRow:    S.courtRow,
+    pendingVox:  S.pendingVox,
+    drafting:    S.drafting,
+    draftOrder:  S.draftOrder,
+    includePack: S.includePack,
     gameMode:    S.gameMode,
     playerCount: S.playerCount,
   }));
@@ -73,6 +91,11 @@ function load() {
     S.assignments = d.assignments || {};
     S.courtStates = d.courtStates || {};
     S.courtOrder  = d.courtOrder  || [];
+    S.courtRow    = d.courtRow ?? null;
+    S.pendingVox  = d.pendingVox ?? null;
+    S.drafting    = d.drafting === true;
+    S.draftOrder  = d.draftOrder || [];
+    S.includePack = d.includePack === true;
     S.gameMode    = d.gameMode    || false;
     S.playerCount = d.playerCount || 4;
   } catch (_) { /* ignore corrupt data */ }
@@ -82,6 +105,10 @@ function hardReset() {
   S.assignments = {};
   S.courtStates = {};
   S.courtOrder  = [];
+  S.courtRow    = null;
+  S.pendingVox  = null;
+  S.drafting    = false;
+  S.draftOrder  = [];
   S.gameMode    = false;
   save();
 }
@@ -101,9 +128,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  restoreCourt();
   bindEvents();
   applyGameMode();
-  syncPlayerCount();
   render();
 });
 
@@ -149,39 +176,33 @@ function bindEvents() {
     render();
   });
 
-  // Game mode toggle
   document.getElementById('game-mode-toggle').addEventListener('change', e => {
     S.gameMode = e.target.checked;
-    if (S.gameMode && S.courtOrder.length === 0) {
-      shuffleCourtDeck();
-    }
     save();
     applyGameMode();
     render();
   });
 
-  // Draw card
-  document.getElementById('btn-draw').addEventListener('click', drawCard);
+  document.getElementById('btn-setup-court').addEventListener('click', setupCourt);
+  document.getElementById('btn-noble').addEventListener('click', secureWithNoble);
 
-  // Reset deck
-  document.getElementById('btn-reset-deck').addEventListener('click', resetDeck);
-
-  // Player count selector
   document.querySelectorAll('.pc-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.pc-btn').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      S.playerCount = parseInt(btn.dataset.pc, 10);
+      S.playerCount = Number(btn.dataset.pc);
+      syncPlayerCount();
       save();
     });
   });
 
-  // Draft leaders
-  document.getElementById('btn-draft-leaders').addEventListener('click', () => {
-    const each  = 2;
-    const total = S.playerCount * each;
-    if (!confirm(`Deal ${total} leaders for a ${S.playerCount}-player draft (${each} each)?\n\nThis will reset any existing leader assignments.`)) return;
-    draftLeaders();
+  document.getElementById('include-pack').addEventListener('change', e => {
+    S.includePack = e.target.checked;
+    save();
+  });
+
+  document.getElementById('btn-draft').addEventListener('click', () => {
+    const count = S.playerCount + 1;
+    if (!confirm(`Reveal ${count} Leaders and ${count} Lore cards? This replaces existing Leader and Lore assignments.`)) return;
+    startDraft();
   });
 }
 
@@ -191,88 +212,133 @@ function courtIndices() {
   return allCards.map((c, i) => ({ c, i })).filter(({ c }) => c.type === 'court').map(({ i }) => i);
 }
 
-function shuffleCourtDeck() {
+function shuffle(cards) {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  return cards;
+}
+
+function restoreCourt() {
+  // Older saves tracked face-up cards without slots.
+  if (S.courtRow !== null || S.courtOrder.length === 0) return;
   const indices = courtIndices();
-  // Fisher-Yates
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  S.courtOrder = indices;
-  indices.forEach(i => { S.courtStates[i] = CS.DECK; });
-  save();
+  if (indices.every(i => S.courtStates[i] === CS.DECK)) return;
+
+  S.courtOrder = S.courtOrder.filter(i => S.courtStates[i] === CS.DECK || !S.courtStates[i]);
+  S.courtRow = indices.filter(i => S.courtStates[i] === CS.COURT);
+  while (S.courtRow.length < (S.playerCount === 2 ? 3 : 4)) S.courtRow.push(null);
+  indices.forEach(i => {
+    if (S.courtStates[i] === CS.COURT) S.assignments[i] = 'court';
+    else if (S.courtStates[i] !== CS.HELD) delete S.assignments[i];
+  });
 }
 
-// True if this court card is a VOX card (triggers & discards — can't be held)
-function isVox(card) {
-  return card.title.includes('(VOX)');
-}
+function setupCourt() {
+  if (S.courtRow !== null) return;
 
-// True if this VOX card specifically shuffles back into the court deck (Song of Freedom)
-function isShuffleBack(card) {
-  return card.title.startsWith('SONG OF FREEDOM');
-}
-
-function drawCard() {
-  // Find the next DECK card in shuffled order
-  const next = S.courtOrder.find(i => (S.courtStates[i] || CS.DECK) === CS.DECK);
-  if (next === undefined) return;
-  S.courtStates[next] = CS.COURT;
-  S.assignments[next] = 'court';
-  save();
-  updateStats();
-  render();
-}
-
-// Called whenever a COURT card leaves the face-up row (secured or discarded).
-// Per the rules, a replacement is automatically drawn from the deck.
-function autoDrawReplacement() {
-  const next = S.courtOrder.find(i => (S.courtStates[i] || CS.DECK) === CS.DECK);
-  if (next === undefined) return; // deck exhausted — no replacement drawn
-  S.courtStates[next] = CS.COURT;
-  S.assignments[next] = 'court';
-}
-
-function resetDeck() {
-  // End-of-chapter reshuffle: the discard pile goes back into the court deck.
-  // Held guild cards (with players) stay held.
-  // Song of Freedom is already handled specially when it's discarded (shuffled in mid-game).
-  const all     = courtIndices();
-  const held    = all.filter(i => S.courtStates[i] === CS.HELD);
-  const returns = all.filter(i => S.courtStates[i] !== CS.HELD); // deck + court + discard all go back
-
-  const msg = `Reshuffle court deck for a new chapter?\n\nThe discard pile (${
-    all.filter(i => S.courtStates[i] === CS.DISCARD).length
-  } cards) will be shuffled back in.\nHeld cards (${held.length}) stay with their players.`;
-  if (!confirm(msg)) return;
-
-  // Fisher-Yates shuffle of all returnable cards
-  for (let i = returns.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [returns[i], returns[j]] = [returns[j], returns[i]];
-  }
-  returns.forEach(i => {
+  const indices = courtIndices();
+  S.courtOrder = shuffle(indices);
+  indices.forEach(i => {
     S.courtStates[i] = CS.DECK;
     delete S.assignments[i];
   });
-  S.courtOrder = [...returns, ...held];
+  S.courtRow = Array.from({ length: S.playerCount === 2 ? 3 : 4 }, drawToCourt);
+  selectView('court', 'court');
   save();
-  updateStats();
   render();
 }
 
-function setCourtState(idx, newState) {
-  S.courtStates[idx] = newState;
-  // Clear assignment when leaving play
-  if (newState === CS.DECK || newState === CS.DISCARD) {
-    delete S.assignments[idx];
+function drawToCourt() {
+  const next = S.courtOrder.shift();
+  if (next === undefined) return null;
+  S.courtStates[next] = CS.COURT;
+  S.assignments[next] = 'court';
+  return next;
+}
+
+function isVox(card) {
+  return card.title.endsWith('(VOX)');
+}
+
+function finishVox(idx) {
+  if (S.pendingVox !== idx) return;
+  const title = allCards[idx].title;
+  const slot = S.courtRow.indexOf(idx);
+  delete S.assignments[idx];
+  S.courtStates[idx] = CS.DISCARD;
+
+  if (title === CARD.SONG) {
+    S.courtStates[idx] = CS.DECK;
+    S.courtOrder = shuffle([...S.courtOrder, idx]);
+  } else if (title === CARD.STRUGGLE) {
+    const guilds = courtIndices().filter(i => S.courtStates[i] === CS.DISCARD && !isVox(allCards[i]));
+    guilds.forEach(i => { S.courtStates[i] = CS.DECK; });
+    S.courtOrder = shuffle([...S.courtOrder, ...guilds]);
   }
-  // Mark as held when assigned to a player
-  if (newState === CS.HELD) {
-    // assignment handled by assign buttons
+
+  S.pendingVox = null;
+  if (slot !== -1) S.courtRow[slot] = drawToCourt();
+  save();
+  render();
+}
+
+function nobleOwner() {
+  const idx = allCards.findIndex(card => card.title === CARD.NOBLE);
+  return S.assignments[idx];
+}
+
+function secureWithNoble() {
+  const owner = nobleOwner();
+  if (!PLAYERS.includes(owner) || !S.courtRow || S.pendingVox !== null || !S.courtOrder.length) return;
+  const idx = S.courtOrder.shift();
+  if (isVox(allCards[idx])) {
+    S.courtStates[idx] = CS.RESOLVING;
+    S.pendingVox = idx;
+    selectView('court', 'all');
+  } else {
+    S.courtStates[idx] = CS.HELD;
+    S.assignments[idx] = owner;
+    selectView('court', owner);
   }
   save();
-  updateStats();
+  render();
+}
+
+function moveCourtCard(idx, action) {
+  const state = S.courtStates[idx];
+  const card = allCards[idx];
+
+  if (action === 'finish') {
+    finishVox(idx);
+    return;
+  }
+
+  if (state === CS.COURT && S.pendingVox === null) {
+    if (isVox(card)) {
+      if (action !== 'resolve') return;
+      S.pendingVox = idx;
+    } else {
+      if (!PLAYERS.includes(action)) return;
+      S.courtStates[idx] = CS.HELD;
+      S.assignments[idx] = action;
+      S.courtRow[S.courtRow.indexOf(idx)] = drawToCourt();
+    }
+  } else if (state === CS.HELD) {
+    if (action === 'none' || action === 'bury') {
+      delete S.assignments[idx];
+      S.courtStates[idx] = action === 'bury' ? CS.DECK : CS.DISCARD;
+      if (action === 'bury') S.courtOrder.push(idx);
+    } else {
+      if (!PLAYERS.includes(action) || card.title === CARD.GUARDIANS) return;
+      S.assignments[idx] = action;
+    }
+  } else {
+    return;
+  }
+
+  save();
   render();
 }
 
@@ -296,62 +362,112 @@ function applyGameMode() {
   if (S.gameMode) {
     app.classList.add('game-active');
     gameBar.hidden = false;
-    updateStats();
   } else {
     app.classList.remove('game-active');
     gameBar.hidden = true;
   }
 }
 
-// ── Leader draft ─────────────────────────────────────────────
+// ── Leaders & Lore draft ───────────────────────────────────
 
-function draftLeaders() {
-  // Collect all leader indices and shuffle them
-  const indices = allCards
-    .map((c, i) => ({ c, i }))
-    .filter(({ c }) => c.type === 'leader')
-    .map(({ i }) => i);
-
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
+function startDraft() {
+  for (const type of ['leader', 'lore']) {
+    const indices = allCards.flatMap((card, i) => card.type === type ? [i] : []);
+    indices.forEach(i => { delete S.assignments[i]; });
+    // Each type is listed in publisher order, with the base cards before the add-on pack.
+    const pool = S.includePack ? indices : indices.slice(0, BASE_DRAFT_COUNTS[type]);
+    shuffle(pool).slice(0, S.playerCount + 1).forEach(i => { S.assignments[i] = 'draft'; });
   }
-
-  // Reset all leader assignments
-  indices.forEach(i => { S.assignments[i] = 'none'; });
-
-  // Mark the first (playerCount × 2) as 'draft' — the face-up pool to pick from
-  const draftCount = S.playerCount * 2;
-  indices.slice(0, draftCount).forEach(i => { S.assignments[i] = 'draft'; });
-
+  S.drafting = true;
+  S.draftOrder = [];
+  selectView('leader', 'draft');
   save();
-
-  // Switch view to Leader tab → Draft filter so host sees the pool immediately
-  S.activeType   = 'leader';
-  S.activePlayer = 'draft';
-  document.querySelectorAll('.type-tab').forEach(b => {
-    b.classList.remove('is-active');
-    b.setAttribute('aria-selected', 'false');
-  });
-  const leaderTab = document.querySelector('.type-tab[data-type="leader"]');
-  leaderTab.classList.add('is-active');
-  leaderTab.setAttribute('aria-selected', 'true');
-  document.querySelectorAll('.p-filter').forEach(b => b.classList.remove('is-active'));
-  document.querySelector('.p-filter[data-player="draft"]').classList.add('is-active');
-
   render();
 }
 
-// Also sync the player-count buttons to the saved state on load
+function draftedPlayers(type) {
+  return new Set(allCards.flatMap((card, i) => {
+    const owner = S.assignments[i];
+    return card.type === type && PLAYERS.includes(owner) ? [owner] : [];
+  }));
+}
+
+function nextDrafter() {
+  if (S.draftOrder.length < S.playerCount) return null;
+  const picks = draftedPlayers('leader').size + draftedPlayers('lore').size;
+  return S.draftOrder[picks % S.playerCount];
+}
+
+function draftOptions(type) {
+  const next = nextDrafter();
+  if (next === null) return PLAYERS.filter(p => !S.draftOrder.includes(p));
+  return draftedPlayers(type).has(next) ? [] : [next];
+}
+
+function pickDraftCard(idx, player) {
+  if (S.assignments[idx] !== 'draft' || !draftOptions(allCards[idx].type).includes(player)) return;
+  if (S.draftOrder.length < S.playerCount) S.draftOrder.push(player);
+  S.assignments[idx] = player;
+  if (draftedPlayers('leader').size === S.playerCount && draftedPlayers('lore').size === S.playerCount) {
+    S.drafting = false;
+    S.draftOrder = [];
+    Object.keys(S.assignments).forEach(i => {
+      if (S.assignments[i] === 'draft') delete S.assignments[i];
+    });
+    selectView('leader', 'all');
+  }
+  save();
+  render();
+}
+
+function selectView(type, player) {
+  S.activeType = type;
+  S.activePlayer = player;
+  S.search = '';
+  document.getElementById('search').value = '';
+  document.querySelectorAll('.type-tab').forEach(btn => {
+    const active = btn.dataset.type === type;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('.p-filter').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.player === player);
+  });
+}
+
 function syncPlayerCount() {
   document.querySelectorAll('.pc-btn').forEach(btn => {
-    btn.classList.toggle('is-active', parseInt(btn.dataset.pc, 10) === S.playerCount);
+    btn.classList.toggle('is-active', Number(btn.dataset.pc) === S.playerCount);
+    btn.disabled = S.courtRow !== null || S.drafting;
   });
+}
+
+function renderGameControls() {
+  syncPlayerCount();
+  document.getElementById('btn-setup-court').hidden = S.courtRow !== null;
+  const noble = document.getElementById('btn-noble');
+  noble.hidden = S.courtRow === null || !PLAYERS.includes(nobleOwner());
+  noble.disabled = S.pendingVox !== null || S.courtOrder.length === 0;
+  document.getElementById('btn-draft').disabled = S.drafting;
+  const pack = document.getElementById('include-pack');
+  pack.checked = S.includePack;
+  pack.disabled = S.drafting;
+  const note = document.getElementById('game-note');
+  const pending = S.pendingVox !== null;
+  const drafter = S.drafting ? nextDrafter() : null;
+  note.hidden = !S.gameMode || (!pending && !S.drafting);
+  note.textContent = pending
+    ? 'Resolve the Vox effect at the table, record any card transfers or discards here, then finish the Vox card.'
+    : drafter
+      ? `Next pick: ${ASSIGN_TITLES[drafter]}. Open the Leader or Lore tab to pick the type they still need.`
+      : 'For the first pass, pick in reverse turn order, starting to the right of the player with initiative.';
+  updateStats();
 }
 
 // ── Render ───────────────────────────────────────────────────
 
 function render() {
+  renderGameControls();
   const grid  = document.getElementById('cards-grid');
   const empty = document.getElementById('empty-state');
 
@@ -372,14 +488,16 @@ function render() {
     );
   }
 
-  // In game mode, sort court cards: court row → held → deck → discard
   if (S.gameMode && S.activeType === 'court') {
-    const order = { [CS.COURT]: 0, [CS.HELD]: 1, [CS.DECK]: 2, [CS.DISCARD]: 3 };
-    cards.sort((a, b) => {
-      const sa = order[S.courtStates[a.idx] || CS.DECK] ?? 2;
-      const sb = order[S.courtStates[b.idx] || CS.DECK] ?? 2;
-      return sa - sb;
-    });
+    // Preserve row positions and keep the identities of undrawn cards private.
+    const rank = card => {
+      if (S.courtStates[card.idx] === CS.RESOLVING) return -1;
+      const slot = S.courtRow?.indexOf(card.idx) ?? -1;
+      if (slot !== -1) return slot;
+      return (S.courtRow?.length ?? 0) + (S.courtStates[card.idx] === CS.HELD ? 0 : 1);
+    };
+    cards = cards.filter(c => S.courtStates[c.idx] && S.courtStates[c.idx] !== CS.DECK);
+    cards.sort((a, b) => rank(a) - rank(b));
   }
 
   grid.innerHTML = '';
@@ -402,6 +520,7 @@ function buildCard(card) {
   const assigned = S.assignments[idx] || 'none';
   const cState   = S.courtStates[idx] || CS.DECK;
 
+  const controls = buildCardControls(card, assigned, cState);
   const el = document.createElement('article');
   el.className  = 'card';
   el.dataset.type = card.type;
@@ -422,115 +541,68 @@ function buildCard(card) {
     <div class="card__body">
       <p class="card__desc">${formatDesc(card.description)}</p>
     </div>
-    <div class="card__foot">
-      <span class="assign-lbl">ASSIGN</span>
-      ${buildAssignBtns(idx, assigned, card)}
-    </div>
+    ${controls ? `<div class="card__foot">${controls}</div>` : ''}
   `;
 
-  // Assign button events
-  el.querySelectorAll('.a-btn').forEach(btn => {
+  el.querySelectorAll('[data-a]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const val = btn.dataset.a;
-      S.assignments[idx] = val;
-
-      if (S.gameMode && card.type === 'court') {
-        const prevState = S.courtStates[idx] || CS.DECK;
-
-        if (val === 'court') {
-          // Returning a card to the face-up court row
-          S.courtStates[idx] = CS.COURT;
-        } else if (val === 'none') {
-          // Discarding the card — with one exception:
-          // Song of Freedom says "Shuffle this card into the Court deck."
-          if (isShuffleBack(card)) {
-            S.courtStates[idx] = CS.DECK;
-            delete S.assignments[idx];
-            // Insert at a random position among the remaining deck cards
-            const deckIdxs = S.courtOrder.filter(
-              i => i !== idx && (S.courtStates[i] || CS.DECK) === CS.DECK
-            );
-            const pos = Math.floor(Math.random() * (deckIdxs.length + 1));
-            S.courtOrder = S.courtOrder.filter(i => i !== idx);
-            if (deckIdxs.length === 0) {
-              S.courtOrder.unshift(idx);
-            } else {
-              const insertAfter = pos < deckIdxs.length ? deckIdxs[pos] : null;
-              const at = insertAfter !== null
-                ? S.courtOrder.indexOf(insertAfter)
-                : S.courtOrder.length;
-              S.courtOrder.splice(at, 0, idx);
-            }
-          } else {
-            S.courtStates[idx] = CS.DISCARD;
-            delete S.assignments[idx];
-          }
-        } else {
-          // Assigning to a player — only valid for Guild cards, not VOX
-          S.courtStates[idx] = CS.HELD;
-        }
-
-        // Rule: when a face-up COURT card leaves the row, auto-draw a replacement
-        if (prevState === CS.COURT && S.courtStates[idx] !== CS.COURT) {
-          autoDrawReplacement();
-        }
+      const action = btn.dataset.a;
+      if (card.type === 'court' && S.courtRow !== null) {
+        if (S.gameMode) moveCourtCard(idx, action);
+      } else if (card.type !== 'court' && S.drafting) {
+        if (S.gameMode) pickDraftCard(idx, action);
+      } else {
+        S.assignments[idx] = action;
+        save();
+        render();
       }
-
-      save();
-      updateStats();
-      render();
     });
   });
-
-  // State button events
-  el.querySelectorAll('.s-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setCourtState(idx, btn.dataset.s);
-    });
-  });
-
   return el;
 }
 
-function buildAssignBtns(idx, assigned, card) {
-  // VOX court cards trigger-and-discard — players never hold them.
-  // Only show COURT (return to row) and NONE (discard / trigger effect).
-  let opts = ASSIGN_OPTIONS[card.type];
-  if (S.gameMode && card.type === 'court' && isVox(card)) {
-    opts = ['court', 'none'];
+function buildCardControls(card, assigned, state) {
+  if (card.type === 'court' && S.courtRow !== null) {
+    if (!S.gameMode) return '';
+    if (S.pendingVox === card.idx) {
+      return actionButton('finish', 'Finish Vox');
+    }
+    if (state === CS.COURT && S.pendingVox === null) {
+      return isVox(card)
+        ? actionButton('resolve', 'Resolve Vox')
+        : playerButtons('Secure for', PLAYERS, assigned);
+    }
+    if (state === CS.HELD) {
+      const discard = actionButton('none', 'Discard');
+      if (card.title === CARD.GUARDIANS) {
+        return actionButton('bury', 'Bury if stolen') + discard;
+      }
+      return playerButtons('Transfer to', PLAYERS.filter(p => p !== assigned), assigned) + discard;
+    }
+    return '';
   }
 
-  return opts.map(opt => {
-    // In game mode, the 'none' button on a court card = send to discard pile.
-    // Render the × character directly inside the button (not via CSS ::after)
-    // so it shows reliably across all browsers.
-    const isDiscard = S.gameMode && card.type === 'court' && opt === 'none';
-    const label     = isDiscard ? 'Discard to pile' : ASSIGN_TITLES[opt];
-    const inner     = isDiscard ? '×' : '';
-    return `<button
-       class="a-btn${assigned === opt ? ' on' : ''}"
-       data-a="${opt}"
-       title="${label}"
-       aria-label="${label}"
-       aria-pressed="${assigned === opt}"
-     >${inner}</button>`;
+  if (card.type !== 'court' && S.drafting) {
+    return S.gameMode && assigned === 'draft'
+      ? playerButtons('Draft for', draftOptions(card.type), assigned)
+      : '';
+  }
+
+  return playerButtons('Assign', ASSIGN_OPTIONS[card.type], assigned);
+}
+
+function playerButtons(label, options, assigned) {
+  if (options.length === 0) return '';
+  return `<span class="assign-lbl">${label}</span>` + options.map(opt => {
+    const title = ASSIGN_TITLES[opt];
+    return `<button class="a-btn${assigned === opt ? ' on' : ''}" data-a="${opt}"
+      title="${title}" aria-label="${label}: ${title}" aria-pressed="${assigned === opt}"></button>`;
   }).join('');
 }
 
-function buildStateBtns(idx, cState) {
-  const states = [
-    { key: CS.DECK,    label: 'DECK'    },
-    { key: CS.COURT,   label: 'COURT'   },
-    { key: CS.DISCARD, label: 'DISCARD' },
-  ];
-  return `<div class="card__state-btns">${
-    states.map(s =>
-      `<button class="s-btn${cState === s.key ? ' on' : ''}" data-s="${s.key}" title="Move to ${s.label.toLowerCase()}">${s.label}</button>`
-    ).join('')
-  }</div>`;
+function actionButton(action, label) {
+  return `<button class="btn btn--outline" data-a="${action}">${label}</button>`;
 }
-
-// ── Helpers ──────────────────────────────────────────────────
 
 function formatDesc(text) {
   return text.replace(KEYWORD_RE, '<strong>$1</strong>');
